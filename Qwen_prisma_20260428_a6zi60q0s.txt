@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  STUDENT
+  PARENT
+}
+
+enum AdmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CARD
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  role          Role
+  firstName     String
+  lastName      String
+  phone         String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  student       Student?
+  staff         Staff?
+  parent        Parent?
+  @@index([email])
+}
+
+model Student {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  admissionNo   String    @unique
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  stream        String?
+  dateOfBirth   DateTime
+  gender        String
+  address       String?
+  parentId      String?
+  parent        Parent?   @relation(fields: [parentId], references: [id], onDelete: SetNull)
+  payments      Payment[]
+  attendance    Attendance[]
+  grades        Grade[]
+  createdAt     DateTime  @default(now())
+}
+
+model Staff {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  employeeId    String    @unique
+  department    String
+  subjectIds    String[]
+  classes       Class[]   @relation("StaffClasses")
+  attendance    Attendance[]
+  payroll       Payroll[]
+}
+
+model Parent {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  children      Student[] @relation("ParentChildren")
+}
+
+model Class {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  gradeLevel    Int
+  stream        String?
+  capacity      Int
+  students      Student[]
+  teachers      Staff[]   @relation("StaffClasses")
+  subjects      Subject[]
+  feeStructure  FeeStructure?
+}
+
+model Subject {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  code          String    @unique
+  classes       Class[]
+  exams         Exam[]
+}
+
+model Exam {
+  id            String    @id @default(uuid())
+  subjectId     String
+  subject       Subject   @relation(fields: [subjectId], references: [id])
+  term          String
+  year          Int
+  maxScore      Int
+  grades        Grade[]
+}
+
+model Grade {
+  id            String    @id @default(uuid())
+  examId        String
+  exam          Exam      @relation(fields: [examId], references: [id])
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id])
+  score         Float
+  remarks       String?
+}
+
+model FeeStructure {
+  id            String    @id @default(uuid())
+  classId       String    @unique
+  class         Class     @relation(fields: [classId], references: [id])
+  amount        Float
+  term          String
+  dueDate       DateTime
+  payments      Payment[]
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  feeStructureId String
+  feeStructure  FeeStructure @relation(fields: [feeStructureId], references: [id])
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id])
+  amount        Float
+  method        PaymentMethod
+  transactionRef String?
+  status        String    @default("PENDING") // PAID, PARTIAL, OVERDUE
+  paidAt        DateTime? @default(now())
+}
+
+model Attendance {
+  id            String    @id @default(uuid())
+  date          DateTime  @default(now())
+  studentId     String?
+  student       Student?  @relation(fields: [studentId], references: [id])
+  staffId       String?
+  staff         Staff?    @relation(fields: [staffId], references: [id])
+  status        String    // PRESENT, ABSENT, LATE, EXCUSED
+  @@unique([date, studentId, staffId])
+}
+
+model Admission {
+  id            String    @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String
+  phone         String
+  classApplied  String
+  documents     String[]
+  status        AdmissionStatus @default(PENDING)
+  reviewedBy    String?
+  createdAt     DateTime  @default(now())
+}
+
+model Payroll {
+  id            String    @id @default(uuid())
+  staffId       String
+  staff         Staff     @relation(fields: [staffId], references: [id])
+  month         String
+  year          Int
+  baseSalary    Float
+  deductions    Float
+  netPay        Float
+  paidAt        DateTime?
+}

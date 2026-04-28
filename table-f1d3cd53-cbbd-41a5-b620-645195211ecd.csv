@@ -1,0 +1,11 @@
+﻿Method,Endpoint,Role,Description
+POST,/api/auth/login,Public,Authenticate & get JWT
+GET,/api/auth/me,Any,Get current user profile
+POST,/api/students,Admin/Staff,Register new student
+GET,/api/students,Admin/Staff/Student,List students (filtered)
+POST,/api/admissions,Public,Submit admission form
+GET,/api/admissions,Admin,Review & approve applications
+POST,/api/fees/generate,Admin/Accountant,Create invoice
+GET,/api/fees/outstanding,Admin/Student,View balances
+POST,/api/attendance,Staff,Mark daily attendance
+POST,/api/exams,Staff,Create exam & record grades
